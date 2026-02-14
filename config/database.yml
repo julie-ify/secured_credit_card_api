@@ -1,0 +1,16 @@
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+development:
+  <<: *default
+  database: secured_credit_card_api_development
+test:
+  <<: *default
+  database: secured_credit_card_api_test
+production:
+  <<: *default
+  database: secured_credit_card_api_production
+  username: secured_credit_card_api
+  password: <%= ENV["SECURED_CREDIT_CARD_API_DATABASE_PASSWORD"] %>
