@@ -2,6 +2,7 @@ class CreateLedgerTransaction
   def self.call(reference:, entries:)
     raise ArgumentError, "Entries required" if entries.empty?
     raise UnbalancedLedgerError unless entries.sum { |e| e[:amount_cents] }.zero?
+
     enforce_credit_limits!(entries)
 
     ActiveRecord::Base.transaction do
@@ -20,15 +21,13 @@ class CreateLedgerTransaction
   end
 
   def self.enforce_credit_limits!(entries)
-    debit_entries = entries.select { |e| e[:amount_cents] < 0 }
+    debit_entries = entries.select { |e| e[:amount_cents].negative? }
 
     debit_entries.each do |entry|
       account = entry[:account]
       amount  = entry[:amount_cents].abs
 
-      if account.available_credit_cents < amount
-        raise ActiveRecord::Rollback, "Credit limit exceeded"
-      end
+      raise ActiveRecord::Rollback, "Credit limit exceeded" if account.available_credit_cents < amount
     end
   end
 end

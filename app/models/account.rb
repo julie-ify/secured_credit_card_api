@@ -1,5 +1,5 @@
 class Account < ApplicationRecord
-  has_many :ledger_entries
+  has_many :ledger_entries, dependent: :destroy
 
   validates :credit_limit_cents, numericality: { greater_than_or_equal_to: 0 }
   validates :name, presence: true, uniqueness: true

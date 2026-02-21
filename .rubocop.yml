@@ -1,0 +1,15 @@
+inherit_from: .rubocop_todo.yml
+
+plugins: 
+  - rubocop-rails
+  - rubocop-rspec
+
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2.4
+  SuggestExtensions: false
+  Exclude:
+    - 'bin/**/*'
+    - 'db/schema.rb'
+    - 'vendor/**/*'

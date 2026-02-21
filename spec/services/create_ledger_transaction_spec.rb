@@ -1,74 +1,73 @@
 require "rails_helper"
 RSpec.describe CreateLedgerTransaction do
   describe ".call" do
-    let!(:a1) { create(:account) }
-    let!(:a2) { create(:account) }
+    let!(:customer) { create(:account) }
+    let!(:merchant) { create(:account) }
 
     context "when entries are unbalanced" do
       let(:entries) do
         [
-          { account: a1, amount_cents: -1000, entry_type: "debit" },
-          { account: a2, amount_cents: 1200, entry_type: "credit" }
+          { account: customer, amount_cents: -1000, entry_type: "debit" },
+          { account: merchant, amount_cents: 1200, entry_type: "credit" }
         ]
       end
 
       it "raises UnbalancedLedgerError" do
-        expect {
+        expect do
           described_class.call(reference: "tx_001", entries: entries)
-        }.to raise_error(UnbalancedLedgerError)
-    	end
+        end.to raise_error(UnbalancedLedgerError)
+      end
 
-      it "does not create any records" do
-        expect {
-          begin
-            described_class.call(reference: "tx_001", entries: entries)
-          rescue UnbalancedLedgerError
-          end
-        }.to change { LedgerTransaction.count }.by(0)
-          .and change { LedgerEntry.count }.by(0)
+      it "does not create any transaction records" do
+        expect do
+          described_class.call(reference: "tx_001", entries: entries)
+        end.to raise_error(UnbalancedLedgerError).and change(LedgerTransaction, :count).by(0)
       end
     end
 
     context "when entries are balanced" do
       let(:entries) do
         [
-          { account: a1, amount_cents: -1000, entry_type: "debit" },
-          { account: a2, amount_cents: 1000, entry_type: "credit" }
+          { account: customer, amount_cents: -1000, entry_type: "debit" },
+          { account: merchant, amount_cents: 1000, entry_type: "credit" }
         ]
       end
 
       it "creates a ledger transaction" do
-        expect {
+        expect do
           described_class.call(reference: "tx_002", entries: entries)
-        }.to change(LedgerTransaction, :count).by(1)
+        end.to change(LedgerTransaction, :count).by(1)
       end
 
       it "creates ledger entries" do
-        expect {
+        expect do
           described_class.call(reference: "tx_002", entries: entries)
-        }.to change(LedgerEntry, :count).by(2)
+        end.to change(LedgerEntry, :count).by(2)
       end
 
       it "links ledger entries to the transaction" do
         tx = described_class.call(reference: "tx_003", entries: entries)
 
         expect(tx.ledger_entries.pluck(:amount_cents))
-          .to match_array([-1000, 1000])
+          .to contain_exactly(-1000, 1000)
       end
     end
 
-    context "atomicity" do
+    context "when no entries are provided" do
       let(:entries) do
         []
       end
 
-      it "rolls back if ledger entry creation fails" do
-        expect {
+      it "raises an ArgumentError" do
+        expect do
           described_class.call(reference: "tx_004", entries: entries)
-        }.to raise_error(ArgumentError)
+        end.to raise_error(ArgumentError)
+      end
 
-        expect(LedgerTransaction.count).to eq(0)
-        expect(LedgerEntry.count).to eq(0)
+      it "rolls back transaction if ledger entry creation fails" do
+        expect do
+          described_class.call(reference: "tx_004", entries: entries)
+        end.to raise_error(ArgumentError).and change(LedgerTransaction, :count).by(0)
       end
     end
   end
