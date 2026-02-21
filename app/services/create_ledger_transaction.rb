@@ -5,7 +5,7 @@ class CreateLedgerTransaction
     enforce_credit_limits!(entries)
 
     ActiveRecord::Base.transaction do
-      tx = LedgerTransaction.create!(reference: reference)
+      tx = LedgerTransaction.create!(reference: reference, status: 0) # pending
 
       entries.each do |entry|
         tx.ledger_entries.create!(
