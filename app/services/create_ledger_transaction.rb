@@ -53,6 +53,11 @@ class CreateLedgerTransaction
       .select { |e| e[:amount_cents].negative? }
       .each do |entry|
         account = entry[:account]
+
+        # Lock account rows to prevent concurrent authorizations
+        # from overspending available credit
+        account.lock!
+
         amount = entry[:amount_cents].abs
 
         raise ActiveRecord::Rollback, "Credit limit exceeded" if
