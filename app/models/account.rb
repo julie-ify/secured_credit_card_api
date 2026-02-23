@@ -9,7 +9,8 @@ class Account < ApplicationRecord
     posted_entries.sum(:amount_cents)
   end
 
-  # Available credit is the credit limit minus the sum of pending debits and the current balance
+  # Available credit is the credit limit minus the
+  # sum of pending debits and the current balance
   def available_credit_cents
     credit_limit_cents - pending_debits_cents + balance_cents
   end
@@ -23,11 +24,13 @@ class Account < ApplicationRecord
 
   private
 
+  # Only consider entries from transactions that have been posted (status: 1)
   def posted_entries
     ledger_entries.joins(:ledger_transaction)
                   .where(ledger_transactions: { status: 1 }) # posted
   end
 
+  # Only consider entries from transactions that are still pending (status: 0)
   def pending_entries
     ledger_entries.joins(:ledger_transaction)
                   .where(ledger_transactions: { status: 0 }) # pending
